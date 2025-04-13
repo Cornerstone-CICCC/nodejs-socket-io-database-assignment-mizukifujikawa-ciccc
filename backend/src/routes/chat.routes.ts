@@ -1,9 +1,10 @@
-import express from 'express';
+import Router from 'express';
 import chatController from '../controllers/chat.controller';
 
-const chatRouter = express.Router();
+const chatRouter = Router();
 
 // Get all chat messages
 chatRouter.get('/', chatController.getAllChats);
+chatRouter.get('/:room', chatController.getChatsByRoom);
 
 export default chatRouter;
