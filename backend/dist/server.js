@@ -6,18 +6,34 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const http_1 = require("http");
 const socket_io_1 = require("socket.io");
+const cookie_session_1 = __importDefault(require("cookie-session"));
 const cors_1 = __importDefault(require("cors"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const chat_routes_1 = __importDefault(require("./routes/chat.routes"));
+const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const chat_socket_1 = __importDefault(require("./sockets/chat.socket"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 // Create server
 const app = (0, express_1.default)();
 // Middleware
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: "http://localhost:4321", // Astro port
+    credentials: true // allow cookie transfer
+}));
 app.use(express_1.default.json());
+const SIGN_KEY = process.env.COOKIE_SIGN_KEY;
+const ENCRYPT_KEY = process.env.COOKIE_ENCRYPT_KEY;
+if (!SIGN_KEY || !ENCRYPT_KEY) {
+    throw new Error("Missing cookie keys!");
+}
+app.use((0, cookie_session_1.default)({
+    name: 'session',
+    keys: [SIGN_KEY, ENCRYPT_KEY],
+    maxAge: 60 * 60 * 1000
+}));
 // Routes
+app.use('/users', user_routes_1.default);
 app.use('/api/chat', chat_routes_1.default);
 // Create HTTP server and attach Socket.IO
 const server = (0, http_1.createServer)(app);

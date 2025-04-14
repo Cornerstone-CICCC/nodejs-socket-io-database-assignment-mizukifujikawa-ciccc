@@ -1,5 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+if (!Astro.cookies.has("session")) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: "/signup",
+    },
+  });
+}
 ---
 
 <Layout>
@@ -22,72 +31,92 @@ import Layout from '../layouts/Layout.astro';
 		<!-- CHAT MESSAGES GO HERE -->
 	</ul>
 
-	<script type="module">
-		import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
+	<button class="btn btn-logout">Log out</button>
+</Layout>
 
-		const socket = io('http://localhost:3500') // backend url
-		const inputUsername = document.querySelector('#username')
-		const inputMessage = document.querySelector('#chat-message')
-		const roomButtons = document.querySelectorAll('.btn-room')
-		const form = document.querySelector('#chat-form')
-		const messages = document.querySelector('#messages')
-		const roomHeading = document.querySelector('#room-heading')
-		let currentRoom = '' // default room
+<script type="module">
+	import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 
-		// Handle room buttons
-		roomButtons.forEach(btn => {
-			btn.addEventListener('click', () => {
-				const roomName = btn.getAttribute('data-room')
-				const username = inputUsername.value || 'Anonymous'
+	const socket = io('http://localhost:3500') // backend url
+	const inputUsername = document.querySelector('#username')
+	const inputMessage = document.querySelector('#chat-message')
+	const roomButtons = document.querySelectorAll('.btn-room')
+	const form = document.querySelector('#chat-form')
+	const messages = document.querySelector('#messages')
+	const roomHeading = document.querySelector('#room-heading')
+	let currentRoom = '' // default room
 
-				messages.innerHTML = '' // Reset chat messages
+	// Handle room buttons
+	roomButtons.forEach(btn => {
+		btn.addEventListener('click', () => {
+			const roomName = btn.getAttribute('data-room')
+			const username = inputUsername.value || 'Anonymous'
 
-				fetch(`http://localhost:3500/api/chat/${roomName}`)
-				.then(res => res.json())
-				.then(history => {
-					history.forEach(data => {
-						const li = document.createElement('li');
-						li.innerHTML = `<span style="${data.username === inputUsername.value ? 'color: green' : 'color: black'}">${data.username ?? 'System'}:</span> ${data.message}`;
-						messages.appendChild(li);
-					});
+			messages.innerHTML = '' // Reset chat messages
 
-					// Join new room
-					currentRoom = roomName
-					roomHeading.textContent = roomName
-					socket.emit('join room', {
-						username,
-						room: currentRoom
-					})
+			fetch(`http://localhost:3500/api/chat/${roomName}`)
+			.then(res => res.json())
+			.then(history => {
+				history.forEach(data => {
+					const li = document.createElement('li');
+					li.innerHTML = `<span style="${data.username === inputUsername.value ? 'color: green' : 'color: black'}">${data.username ?? 'System'}:</span> ${data.message}`;
+					messages.appendChild(li);
 				});
 
-				// Leave room
-				if (currentRoom) {
-					socket.emit('leave room', {
-						username,
-						room: currentRoom
-					})
-				}
-		})
-		})
+				// Join new room
+				currentRoom = roomName
+				roomHeading.textContent = roomName
+				socket.emit('join room', {
+					username,
+					room: currentRoom
+				})
+			});
 
-		form.addEventListener('submit', (e) => {
-			e.preventDefault()
-
-			socket.emit('sendMessage', {
-				username: inputUsername.value,
-				message: inputMessage.value,
-				room: currentRoom
-			})
-		})
-
-		// Listening for new messages on chat event
-		socket.on('newMessage', (data) => {
-			if (data.room === currentRoom) {
-				const li = document.createElement('li')
-				li.innerHTML = `<span style="${data.username === inputUsername.value ? 'color: green' : 'color: black'}">${data.username ?? 'System'}:</span> ${data.message}`
-				messages.appendChild(li)
+			// Leave room
+			if (currentRoom) {
+				socket.emit('leave room', {
+					username,
+					room: currentRoom
+				})
 			}
-		})
-	</script>
+	})
+	})
 
-</Layout>
+	form.addEventListener('submit', (e) => {
+		e.preventDefault()
+
+		socket.emit('sendMessage', {
+			username: inputUsername.value,
+			message: inputMessage.value,
+			room: currentRoom
+		})
+	})
+
+	// Listening for new messages on chat event
+	socket.on('newMessage', (data) => {
+		if (data.room === currentRoom) {
+			const li = document.createElement('li')
+			li.innerHTML = `<span style="${data.username === inputUsername.value ? 'color: green' : 'color: black'}">${data.username ?? 'System'}:</span> ${data.message}`
+			messages.appendChild(li)
+		}
+	})
+
+	const logout = async () => {
+    const res = await fetch(`http://localhost:3500/users/logout`, {
+      method: "GET",
+      credentials: "include"
+    })
+    const data = await res.json()
+    return data
+  }
+
+	const btnLogout = document.querySelector(".btn-logout");
+	btnLogout.addEventListener("click", async () => {
+		if (confirm(`Are you sure to log out?`)) {
+			await logout();
+			window.location.href = "/login";
+		}
+		return
+	});
+</script>
+

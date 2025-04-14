@@ -1,0 +1,138 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// If it has session, redirect to mypage
+if (Astro.cookies.has("session")) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: "/",
+    },
+  });
+}
+---
+
+<Layout title="index">
+	<div class="signup-container">
+		<h1>Create an account</h1>
+		<div class="sub-text">Enter your information to sign up</div>
+		<form>
+			<input type="text" name="username" placeholder="Enter username" required>
+			<input type="password" name="password" placeholder="Enter password" required>
+			<input type="text" name="firstname" placeholder="Enter firstname" required>
+			<input type="text" name="lastname" placeholder="Enter lastname" required>
+			<button class="btn btn-signup">Sign up</button>
+		</form>
+		
+		<div class="divider"><span>or</span></div>
+		<div class="sub-text">If you already have your account</div>
+		<button class="btn btn-login">Log in</button>
+	</div>
+</Layout>
+
+<style>
+	.signup-container h1 {
+		font-size: 24px;
+		margin-bottom: 20px;
+	}
+	.sub-title {
+		font-size: 16px;
+		font-weight: bold;
+		margin-bottom: 5px;
+	}
+	.sub-text {
+		font-size: 14px;
+		color: #666;
+		margin-bottom: 20px;
+	}
+	input {
+		width: 100%;
+		padding: 12px;
+		margin: 8px 0;
+		border: 1px solid #ccc;
+		border-radius: 8px;
+		font-size: 14px;
+		box-sizing: border-box;
+	}
+	.btn {
+		width: 100%;
+		padding: 12px;
+		border: none;
+		border-radius: 8px;
+		font-size: 16px;
+		cursor: pointer;
+		transition:  0.3s;
+	}
+	.btn-signup {
+		background-color: black;
+		color: white;
+	}
+	.btn-signup:hover {
+		background-color: #333;
+	}
+	.btn-login {
+		background-color: #eee;
+		color: black;
+		margin-top: 10px;
+	}
+	.btn-login:hover {
+		background-color: #ddd;
+	}
+	.divider {
+		display: flex;
+		align-items: center;
+		margin: 15px 0;
+	}
+	.divider::before, .divider::after {
+		content: "";
+		flex: 1;
+		height: 1px;
+		background: #ddd;
+	}
+	.divider span {
+		padding: 0 10px;
+		color: #666;
+		font-size: 14px;
+	}
+</style>
+
+<script>
+    const form = document.querySelector("form") as HTMLFormElement
+    const btnSignup = document.querySelector(".btn-signup") as HTMLButtonElement
+
+    const signup = async (event: MouseEvent) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch(`http://localhost:3500/users/signup`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                console.error("Something went wrong!")
+                return
+            }
+            console.log("Signup successful!");
+            window.location.href = "/login"
+        } catch (error) {
+            console.error("Signup failed:", error);
+        }
+    }
+
+    btnSignup?.addEventListener('click', async (event) => {
+		await signup(event)
+	})
+
+	const btnLogin = document.querySelector(".btn-login") as HTMLButtonElement
+
+	btnLogin?.addEventListener('click', async () => {
+		window.location.href = "/login"
+	})
+</script>
